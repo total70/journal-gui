@@ -130,18 +130,25 @@ class SummaryView extends HTMLElement {
     // Get week parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const week = urlParams.get("week") === "true";
+    const previousWeek = urlParams.get("previous_week") === "true";
     
     // Set title
     const title = shadow.getElementById("title")!;
-    title.textContent = week ? "Week Summary" : "Today Summary";
+    if (previousWeek) {
+      title.textContent = "Previous Week Summary";
+    } else if (week) {
+      title.textContent = "Week Summary";
+    } else {
+      title.textContent = "Today Summary";
+    }
 
     // Load summary
-    this.loadSummary(week);
+    this.loadSummary(week, previousWeek);
   }
 
-  private async loadSummary(week: boolean) {
+  private async loadSummary(week: boolean, previousWeek: boolean = false) {
     try {
-      const summary = await invoke("summarize_entries", { week });
+      const summary = await invoke("summarize_entries", { week, previous_week: previousWeek });
       
       this.loading.style.display = "none";
       this.content.style.display = "block";

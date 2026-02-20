@@ -48,11 +48,13 @@ pub struct DependencyStatus {
 }
 
 #[command]
-pub async fn summarize_entries(week: bool) -> Result<String, String> {
+pub async fn summarize_entries(week: bool, previous_week: bool) -> Result<String, String> {
     let mut cmd = Command::new("journal-ai");
     cmd.arg("summarize");
     
-    if week {
+    if previous_week {
+        cmd.arg("--previous-week");
+    } else if week {
         cmd.arg("--week");
     }
     

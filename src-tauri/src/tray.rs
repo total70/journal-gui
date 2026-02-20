@@ -7,8 +7,9 @@ use tauri::{
 pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> {
     // Create menu items
     let new_note = MenuItem::with_id(app, "new_note", "New Note", true, None::<&str>);
-    let summarize_today = MenuItem::with_id(app, "summarize_today", "📊 Summary: Today", true, None::<&str>);
-    let summarize_week = MenuItem::with_id(app, "summarize_week", "📅 Summary: Week", true, None::<&str>);
+    let summarize_today = MenuItem::with_id(app, "summarize_today", "📊 Today", true, None::<&str>);
+    let summarize_week = MenuItem::with_id(app, "summarize_week", "📅 This Week", true, None::<&str>);
+    let summarize_prev_week = MenuItem::with_id(app, "summarize_prev_week", "📰 Last Week", true, None::<&str>);
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>);
     let separator = PredefinedMenuItem::separator(app).unwrap();
     let separator2 = PredefinedMenuItem::separator(app).unwrap();
@@ -19,6 +20,7 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
         &separator,
         &summarize_today.unwrap(),
         &summarize_week.unwrap(),
+        &summarize_prev_week.unwrap(),
         &separator2,
         &quit.unwrap(),
     ]).unwrap();
@@ -33,10 +35,13 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
                     toggle_window(app, "main");
                 }
                 "summarize_today" => {
-                    show_summary_window(app, false);
+                    show_summary_window(app, "today");
                 }
                 "summarize_week" => {
-                    show_summary_window(app, true);
+                    show_summary_window(app, "week");
+                }
+                "summarize_prev_week" => {
+                    show_summary_window(app, "prev_week");
                 }
                 "quit" => {
                     app.exit(0);
@@ -68,11 +73,15 @@ fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>, label: &str) {
     }
 }
 
-fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, week: bool) {
-    let label = if week { "summary-week" } else { "summary-today" };
+fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, summary_type: &str) {
+    let (label, title, url_param) = match summary_type {
+        "week" => ("summary-week", "Week Summary", "week=true"),
+        "prev_week" => ("summary-prev-week", "Previous Week Summary", "previous_week=true"),
+        _ => ("summary-today", "Today Summary", "week=false"),
+    };
     
     // Check if window already exists
-    if let Some(window) = app.get_webview_window(&label) {
+    if let Some(window) = app.get_webview_window(label) {
         window.show().unwrap();
         window.set_focus().unwrap();
         return;
@@ -82,9 +91,9 @@ fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, week: bool) {
     let window = tauri::WebviewWindowBuilder::new(
         app,
         label,
-        tauri::WebviewUrl::App(format!("/summary.html?week={}", week).into())
+        tauri::WebviewUrl::App(format!("/summary.html?{}", url_param).into())
     )
-    .title(if week { "Week Summary" } else { "Today Summary" })
+    .title(title)
     .inner_size(500.0, 400.0)
     .min_inner_size(400.0, 300.0)
     .center()
@@ -94,5 +103,5 @@ fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, week: bool) {
     .unwrap();
     
     // Store the week parameter in window state
-    window.set_title(if week { "Week Summary" } else { "Today Summary" }).unwrap();
+    window.set_title(title).unwrap();
 }

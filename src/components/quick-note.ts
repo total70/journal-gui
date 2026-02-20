@@ -245,7 +245,7 @@ class QuickNote extends HTMLElement {
     this.setLoading(true);
 
     try {
-      const result = await invoke("create_entry", { content });
+      await invoke("create_entry", { content });
       this.showStatus("Saved!", "success");
       
       // Clear and close after short delay
@@ -301,10 +301,9 @@ class QuickNote extends HTMLElement {
     }, 5000);
   }
 
-  private startDrag(e: MouseEvent) {
+  private startDrag(_e: MouseEvent) {
     // Window dragging is handled by Tauri
     // This is a placeholder for custom drag behavior if needed
-    const _ = e;
   }
 }
 

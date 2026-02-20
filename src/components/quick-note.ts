@@ -212,7 +212,7 @@ class QuickNote extends HTMLElement {
     shadow.getElementById("cancel")!.addEventListener("click", () => this.cancel());
     shadow.getElementById("save")!.addEventListener("click", () => this.save());
     shadow.querySelector(".close-btn")!.addEventListener("click", () => this.cancel());
-    shadow.querySelector(".header")!.addEventListener("mousedown", (e) => this.startDrag(e));
+    shadow.querySelector(".header")!.addEventListener("mousedown", (e: Event) => this.startDrag(e as MouseEvent));
 
     // Focus textarea on mount
     setTimeout(() => this.textarea.focus(), 100);

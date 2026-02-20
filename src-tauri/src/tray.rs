@@ -1,6 +1,6 @@
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::{TrayIconBuilder, TrayIconEvent},
+    tray::TrayIconBuilder,
     Manager, Runtime,
 };
 
@@ -21,7 +21,8 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
-            match event.id.as_ref() {
+            let id = event.id.0.as_str();
+            match id {
                 "new_note" => {
                     toggle_window(app);
                 }
@@ -31,10 +32,8 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
                 _ => {}
             }
         })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click { .. } = event {
-                toggle_window(tray.app_handle());
-            }
+        .on_tray_icon_event(|tray, _event| {
+            toggle_window(tray.app_handle());
         })
 }
 
@@ -53,8 +52,4 @@ fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>) {
             "#);
         }
     }
-}
-
-pub fn handle_tray_event<R: Runtime>(_app: &tauri::AppHandle<R>, _event: tauri::tray::TrayIconEvent) {
-    // Additional tray event handling if needed
 }

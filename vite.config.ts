@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { resolve } from "path";
 
 export default defineConfig(async () => ({
   clearScreen: false,
@@ -13,5 +14,11 @@ export default defineConfig(async () => ({
     target: "es2020",
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        summary: resolve(__dirname, "summary.html"),
+      },
+    },
   },
 }));

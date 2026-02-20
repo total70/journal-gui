@@ -46,3 +46,25 @@ pub struct DependencyStatus {
     pub journal_ai: bool,
     pub file_journal: bool,
 }
+
+#[command]
+pub async fn summarize_entries(week: bool) -> Result<String, String> {
+    let mut cmd = Command::new("journal-ai");
+    cmd.arg("summarize");
+    
+    if week {
+        cmd.arg("--week");
+    }
+    
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to execute journal-ai summarize: {}. Is it installed?", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("journal-ai summarize failed: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.trim().to_string())
+}

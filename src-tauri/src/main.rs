@@ -39,6 +39,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::create_entry,
             commands::check_dependencies,
+            commands::summarize_entries,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

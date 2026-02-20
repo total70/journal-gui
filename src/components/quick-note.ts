@@ -12,6 +12,7 @@ styles.replaceSync(`
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     overflow: hidden;
+    position: relative;
   }
   
   .header {
@@ -168,6 +169,74 @@ styles.replaceSync(`
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
+  
+  .menu-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--pico-muted-background-color, #f9fafb);
+    border-bottom: 1px solid var(--pico-form-element-border-color, #e5e7eb);
+  }
+  
+  .menu-bar button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    background: transparent;
+    border: 1px solid var(--pico-form-element-border-color, #e5e7eb);
+    color: var(--pico-color, #374151);
+  }
+  
+  .menu-bar button:hover {
+    background: var(--pico-muted-background-color, #f3f4f6);
+  }
+  
+  .summary-view {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background: var(--pico-card-background-color, #fff);
+  }
+  
+  .summary-view h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: var(--pico-color, #374151);
+  }
+  
+  .summary-view .summary-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--pico-color, #4b5563);
+    white-space: pre-wrap;
+  }
+  
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+  }
+  
+  .loading-overlay .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .loading-overlay p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--pico-muted-color, #6b7280);
+  }
 `);
 
 class QuickNote extends HTMLElement {
@@ -175,6 +244,7 @@ class QuickNote extends HTMLElement {
   private saveBtn: HTMLButtonElement;
   private charCount: HTMLSpanElement;
   private statusEl: HTMLDivElement | null = null;
+  private isLoading: boolean = false;
 
   constructor() {
     super();
@@ -186,7 +256,11 @@ class QuickNote extends HTMLElement {
         <h3>Quick Note</h3>
         <button class="close-btn" aria-label="Close">✕</button>
       </div>
-      <div class="content">
+      <div class="menu-bar">
+        <button id="summarize-today" title="Summarize today's entries">📊 Today</button>
+        <button id="summarize-week" title="Summarize this week's entries">📅 Week</button>
+      </div>
+      <div class="content" id="editor-view">
         <textarea 
           placeholder="Write your note... (Ctrl+Enter to save)"
           rows="4"
@@ -198,6 +272,17 @@ class QuickNote extends HTMLElement {
             <button class="primary" id="save">Save</button>
           </div>
         </div>
+      </div>
+      <div class="summary-view" id="summary-view" style="display: none;">
+        <h4>Summary</h4>
+        <div class="summary-text">Loading...</div>
+        <div class="footer" style="margin-top: 1rem;">
+          <button class="secondary" id="back-to-editor">← Back</button>
+        </div>
+      </div>
+      <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <span class="spinner"></span>
+        <p>Generating summary...</p>
       </div>
     `;
 
@@ -213,6 +298,11 @@ class QuickNote extends HTMLElement {
     shadow.getElementById("save")!.addEventListener("click", () => this.save());
     shadow.querySelector(".close-btn")!.addEventListener("click", () => this.cancel());
     shadow.querySelector(".header")!.addEventListener("mousedown", (e: Event) => this.startDrag(e as MouseEvent));
+    
+    // Summary buttons
+    shadow.getElementById("summarize-today")!.addEventListener("click", () => this.summarize(false));
+    shadow.getElementById("summarize-week")!.addEventListener("click", () => this.summarize(true));
+    shadow.getElementById("back-to-editor")!.addEventListener("click", () => this.showEditor());
 
     // Focus textarea on mount
     setTimeout(() => this.textarea.focus(), 100);
@@ -304,6 +394,44 @@ class QuickNote extends HTMLElement {
   private startDrag(_e: MouseEvent) {
     // Window dragging is handled by Tauri
     // This is a placeholder for custom drag behavior if needed
+  }
+
+  private async summarize(week: boolean) {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    const shadow = this.shadowRoot!;
+    const loadingOverlay = shadow.getElementById("loading-overlay")!;
+    const summaryView = shadow.getElementById("summary-view")!;
+    const editorView = shadow.getElementById("editor-view")!;
+    const summaryText = summaryView.querySelector(".summary-text")!;
+    
+    loadingOverlay.style.display = "flex";
+    
+    try {
+      const summary = await invoke("summarize_entries", { week });
+      summaryText.textContent = summary as string;
+      
+      editorView.style.display = "none";
+      summaryView.style.display = "block";
+    } catch (error) {
+      summaryText.textContent = `Error: ${error}`;
+      editorView.style.display = "none";
+      summaryView.style.display = "block";
+    } finally {
+      loadingOverlay.style.display = "none";
+      this.isLoading = false;
+    }
+  }
+
+  private showEditor() {
+    const shadow = this.shadowRoot!;
+    const summaryView = shadow.getElementById("summary-view")!;
+    const editorView = shadow.getElementById("editor-view")!;
+    
+    summaryView.style.display = "none";
+    editorView.style.display = "block";
+    this.textarea.focus();
   }
 }
 

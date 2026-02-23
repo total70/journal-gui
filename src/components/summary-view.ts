@@ -148,6 +148,7 @@ class SummaryView extends HTMLElement {
 
   private async loadSummary(week: boolean, previousWeek: boolean = false) {
     try {
+      console.log("DEBUG loadSummary: week=", week, "previousWeek=", previousWeek);
       const summary = await invoke("summarize_entries", { week, previous_week: previousWeek });
       
       this.loading.style.display = "none";

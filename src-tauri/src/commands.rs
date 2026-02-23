@@ -49,6 +49,7 @@ pub struct DependencyStatus {
 
 #[command]
 pub async fn summarize_entries(week: Option<bool>, previous_week: Option<bool>) -> Result<String, String> {
+    eprintln!("DEBUG summarize_entries: week={:?}, previous_week={:?}", week, previous_week);
     let week = week.unwrap_or(false);
     let previous_week = previous_week.unwrap_or(false);
     let mut cmd = Command::new("journal-ai");

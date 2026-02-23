@@ -152,7 +152,7 @@ class SummaryView extends HTMLElement {
       // Use explicit object to ensure both params are always sent
       const args = {
         week: week,
-        "previous_week": previousWeek
+        previousWeek: previousWeek
       };
       console.log("DEBUG invoke args:", JSON.stringify(args));
       const summary = await invoke("summarize_entries", args);

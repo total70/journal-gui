@@ -6,7 +6,7 @@ use tauri::{
 
 pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> {
     // Create menu items
-    let new_note = MenuItem::with_id(app, "new_note", "New Note", true, None::<&str>);
+    let new_note = MenuItem::with_id(app, "new_note", "✍️ New Note", true, None::<&str>);
     let summarize_today = MenuItem::with_id(app, "summarize_today", "📊 Today", true, None::<&str>);
     let summarize_week = MenuItem::with_id(app, "summarize_week", "📅 This Week", true, None::<&str>);
     let summarize_prev_week = MenuItem::with_id(app, "summarize_prev_week", "📰 Last Week", true, None::<&str>);
@@ -54,11 +54,41 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
         })
 }
 
+fn position_window_top_right<R: Runtime>(window: &tauri::WebviewWindow<R>) {
+    // Position window in the top-right corner of the primary monitor
+    if let Ok(Some(monitor)) = window.primary_monitor() {
+        let scale = monitor.scale_factor();
+        let screen_size = monitor.size();
+        let screen_pos = monitor.position();
+
+        // Window size in logical pixels
+        let win_width: u32 = 420;
+        let _win_height: u32 = 280;
+        let margin: u32 = 8;
+
+        // Convert screen size to logical pixels
+        let screen_w_logical = (screen_size.width as f64 / scale) as u32;
+
+        // Top-right: x = screen right - window width - margin, y = margin
+        let x = screen_pos.x + (screen_w_logical - win_width - margin) as i32;
+        let y = screen_pos.y + margin as i32;
+
+        let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition {
+            x: x as f64,
+            y: y as f64,
+        }));
+    }
+}
+
 fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>, label: &str) {
     if let Some(window) = app.get_webview_window(label) {
         if window.is_visible().unwrap_or(false) {
             window.hide().unwrap();
         } else {
+            // Position top-right before showing
+            if label == "main" {
+                position_window_top_right(&window);
+            }
             window.show().unwrap();
             window.set_focus().unwrap();
             

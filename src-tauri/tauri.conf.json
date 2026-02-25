@@ -19,6 +19,8 @@
         "maxWidth": 600,
         "maxHeight": 500,
         "center": false,
+        "x": 100,
+        "y": 50,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,

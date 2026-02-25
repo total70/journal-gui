@@ -85,12 +85,13 @@ fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>, label: &str) {
         if window.is_visible().unwrap_or(false) {
             window.hide().unwrap();
         } else {
-            // Position top-right before showing
+            window.show().unwrap();
+            window.set_focus().unwrap();
+            
+            // Position top-right after showing
             if label == "main" {
                 position_window_top_right(&window);
             }
-            window.show().unwrap();
-            window.set_focus().unwrap();
             
             // Focus the textarea after showing (only for main window)
             if label == "main" {

@@ -3,7 +3,7 @@
 mod commands;
 mod tray;
 
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Manager, PhysicalPosition};
 
 fn main() {
     tauri::Builder::default()
@@ -59,6 +59,9 @@ fn main() {
             commands::create_entry,
             commands::check_dependencies,
             commands::summarize_entries,
+            commands::list_todos,
+            commands::set_todo_status,
+            commands::open_linked_note,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

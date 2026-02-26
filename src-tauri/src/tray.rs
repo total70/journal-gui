@@ -10,9 +10,11 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
     let summarize_today = MenuItem::with_id(app, "summarize_today", "📊 Today", true, None::<&str>);
     let summarize_week = MenuItem::with_id(app, "summarize_week", "📅 This Week", true, None::<&str>);
     let summarize_prev_week = MenuItem::with_id(app, "summarize_prev_week", "📰 Last Week", true, None::<&str>);
+    let todos = MenuItem::with_id(app, "todos", "✅ Todos", true, None::<&str>);
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>);
     let separator = PredefinedMenuItem::separator(app).unwrap();
     let separator2 = PredefinedMenuItem::separator(app).unwrap();
+    let separator3 = PredefinedMenuItem::separator(app).unwrap();
 
     // Create menu
     let menu = Menu::with_items(app, &[
@@ -22,6 +24,8 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
         &summarize_week.unwrap(),
         &summarize_prev_week.unwrap(),
         &separator2,
+        &todos.unwrap(),
+        &separator3,
         &quit.unwrap(),
     ]).unwrap();
 
@@ -42,6 +46,9 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
                 }
                 "summarize_prev_week" => {
                     show_summary_window(app, "prev_week");
+                }
+                "todos" => {
+                    show_todos_window(app);
                 }
                 "quit" => {
                     app.exit(0);
@@ -105,6 +112,7 @@ fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>, label: &str) {
 }
 
 fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, summary_type: &str) {
+
     let (label, title, url_param) = match summary_type {
         "week" => ("summary-week", "Week Summary", "week=true"),
         "prev_week" => ("summary-prev-week", "Previous Week Summary", "previous_week=true"),
@@ -135,4 +143,32 @@ fn show_summary_window<R: Runtime>(app: &tauri::AppHandle<R>, summary_type: &str
     
     // Store the week parameter in window state
     window.set_title(title).unwrap();
+}
+
+fn show_todos_window<R: Runtime>(app: &tauri::AppHandle<R>) {
+    let label = "todos";
+
+    if let Some(window) = app.get_webview_window(label) {
+        window.show().unwrap();
+        window.set_focus().unwrap();
+        return;
+    }
+
+    let window = tauri::WebviewWindowBuilder::new(
+        app,
+        label,
+        tauri::WebviewUrl::App("/todos.html".into()),
+    )
+    .title("Todos")
+    .inner_size(460.0, 520.0)
+    .min_inner_size(360.0, 320.0)
+    .decorations(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .resizable(true)
+    .build()
+    .unwrap();
+
+    window.show().unwrap();
+    window.set_focus().unwrap();
 }

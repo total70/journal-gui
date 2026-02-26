@@ -18,6 +18,7 @@ export default defineConfig(async () => ({
       input: {
         main: resolve(__dirname, "index.html"),
         summary: resolve(__dirname, "summary.html"),
+        todos: resolve(__dirname, "todos.html"),
       },
     },
   },

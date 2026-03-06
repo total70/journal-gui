@@ -6,6 +6,7 @@ mod tray;
 use tauri::{Manager, PhysicalPosition};
 
 fn main() {
+    let _ = fix_path_env::fix();
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {

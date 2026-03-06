@@ -45,17 +45,6 @@ fn main() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
-            use tauri::WindowEvent;
-            match event {
-                WindowEvent::CloseRequested { api, .. } => {
-                    // Hide instead of close
-                    window.hide().unwrap();
-                    api.prevent_close();
-                }
-                _ => {}
-            }
-        })
         .invoke_handler(tauri::generate_handler![
             commands::create_entry,
             commands::check_dependencies,

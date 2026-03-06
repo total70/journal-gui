@@ -61,8 +61,17 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
                 _ => {}
             }
         })
-        .on_tray_icon_event(|tray, _event| {
-            toggle_window(tray.app_handle(), "main");
+        .on_tray_icon_event(|tray, event| {
+            use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_window(tray.app_handle(), "main");
+            }
         })
 }
 

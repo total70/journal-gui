@@ -1,4 +1,5 @@
 use tauri::{
+    image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
     Manager, Runtime,
@@ -29,7 +30,11 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> TrayIconBuilder<R> 
         &quit.unwrap(),
     ]).unwrap();
 
+    // Load tray icon - embed the icon directly for cross-platform compatibility
+    let icon = Image::from_bytes(include_bytes!("../icons/32x32.png")).unwrap();
+
     TrayIconBuilder::new()
+        .icon(icon)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {

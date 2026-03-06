@@ -1,3 +1,4 @@
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -7,16 +8,73 @@ use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
+/// Find a binary in common locations on macOS/Linux
+/// This solves the issue where Tauri apps don't have access to .bashrc/.zshrc PATH
+fn find_binary(name: &str) -> Option<PathBuf> {
+    // Check PATH environment variable first
+    if let Ok(path) = which::which(name) {
+        return Some(path);
+    }
+
+    // Common installation paths on macOS/Linux
+    let search_paths: Vec<PathBuf> = vec![
+        // Homebrew
+        PathBuf::from("/opt/homebrew/bin"),
+        PathBuf::from("/usr/local/bin"),
+        PathBuf::from("/usr/bin"),
+        PathBuf::from("/bin"),
+        // User local bin (from .bashrc/.zshrc/.profile)
+        env::var("HOME").ok().map(|h| PathBuf::from(h).join(".local/bin")).unwrap_or_default(),
+        env::var("HOME").ok().map(|h| PathBuf::from(h).join("bin")).unwrap_or_default(),
+        // NVM paths
+        env::var("NVM_DIR").ok().map(|nvm| PathBuf::from(nvm).join("versions/bin")).unwrap_or_default(),
+        // Cargo bin
+        env::var("CARGO_HOME").ok().map(|c| PathBuf::from(c).join("bin")).unwrap_or_default(),
+        // Python user bin
+        env::var("PYTHONUSERBASE").ok().map(|p| PathBuf::from(p).join("bin")).unwrap_or_default(),
+    ];
+
+    for path in search_paths {
+        if !path.as_os_str().is_empty() {
+            let binary = path.join(name);
+            if binary.exists() {
+                return Some(binary);
+            }
+        }
+    }
+
+    None
+}
+
+/// Run a command with proper PATH resolution
+fn run_command(name: &str, args: &[&str]) -> std::process::Output {
+    // Try to find the binary
+    let binary = find_binary(name);
+    
+    match binary {
+        Some(bin) => {
+            Command::new(bin)
+                .args(args)
+                .output()
+                .expect("Failed to execute command")
+        }
+        None => {
+            // Fallback to PATH search
+            Command::new(name)
+                .args(args)
+                .output()
+                .expect("Failed to execute command")
+        }
+    }
+}
+
 #[command]
 pub async fn create_entry(content: String) -> Result<String, String> {
     if content.trim().is_empty() {
         return Err("Content cannot be empty".to_string());
     }
 
-    let output = Command::new("journal-ai")
-        .arg(&content)
-        .output()
-        .map_err(|e| format!("Failed to execute journal-ai: {}. Is it installed?", e))?;
+    let output = run_command("journal-ai", &[&content]);
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -29,17 +87,8 @@ pub async fn create_entry(content: String) -> Result<String, String> {
 
 #[command]
 pub async fn check_dependencies() -> Result<DependencyStatus, String> {
-    let journal_ai = Command::new("which")
-        .arg("journal-ai")
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false);
-
-    let file_journal = Command::new("which")
-        .arg("file-journal")
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false);
+    let journal_ai = find_binary("journal-ai").is_some();
+    let file_journal = find_binary("file-journal").is_some();
 
     Ok(DependencyStatus {
         journal_ai,
@@ -57,18 +106,20 @@ pub struct DependencyStatus {
 pub async fn summarize_entries(week: Option<bool>, #[allow(non_snake_case)] previous_week: Option<bool>) -> Result<String, String> {
     let week = week.unwrap_or(false);
     let previous_week = previous_week.unwrap_or(false);
-    let mut cmd = Command::new("journal-ai");
-    cmd.arg("summarize");
-
+    
+    let binary = find_binary("journal-ai").ok_or_else(|| "journal-ai not found".to_string())?;
+    
+    let mut args = vec!["summarize"];
     if previous_week {
-        cmd.arg("--previous-week");
+        args.push("--previous-week");
     } else if week {
-        cmd.arg("--week");
+        args.push("--week");
     }
 
-    let output = cmd
+    let output = Command::new(binary)
+        .args(&args)
         .output()
-        .map_err(|e| format!("Failed to execute journal-ai summarize: {}. Is it installed?", e))?;
+        .map_err(|e| format!("Failed to execute journal-ai summarize: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
